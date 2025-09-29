@@ -1,2 +1,23 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Datasets (too large for GitHub)
+asl_alphabet_data/
+asl-alphabet.zip
+
+# Auto-downloaded helper + models
+helper_functions.py
+models/
+final_model/
+
 # Ignore macOS system files
 .DS_Store
