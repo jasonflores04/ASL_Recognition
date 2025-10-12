@@ -1,5 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
+
+<head>
+  <meta charset="utf-8" />
+  <title>ASL Live Capture</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 40px; }
+    video, canvas { border: 2px solid #ccc; width: 320px; height: 240px; }
+    button { margin-top: 10px; padding: 8px 14px; cursor: pointer; }
+    #prediction { font-size: 20px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>ASL Realtime Prediction</h2>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas><br>
+  <button id="capture">📸 Take Photo & Predict</button>
+  <div id="prediction">Prediction: —</div>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const predDiv = document.getElementById("prediction");
+
+    async function setupCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Camera access denied or unavailable: " + err);
+      }
+    }
+
+    async function captureAndPredict() {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL("image/png");
+      const response = await fetch("/predict_base64", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataURL })
+      });
+      const result = await response.json();
+      predDiv.textContent = result.prediction
+        ? "Prediction: " + result.prediction
+        : "Error: " + result.error;
+    }
+
+    document.getElementById("capture").addEventListener("click", captureAndPredict);
+    setupCamera();
+  </script>
+</body>
+
+
+
 <head>
   <meta charset="UTF-8">
   <title>ASL Recognition Showcase</title>

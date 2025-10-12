@@ -72,5 +72,43 @@ def random_image():
         "filename": os.path.basename(img_path)
     })
 
+#########################################
+# 🆕 Real-time Webcam Prediction Route
+#########################################
+from flask import request  # make sure this import is at the top too!
+
+@app.route("/predict_base64", methods=["POST"])
+def predict_base64():
+    """
+    Accepts a base64-encoded image from frontend webcam.
+    Returns the predicted ASL letter.
+    Example JSON: {"image": "data:image/png;base64,<...>"}
+    """
+    try:
+        data = request.get_json()
+        if not data or "image" not in data:
+            return jsonify({"error": "No 'image' field found in request"}), 400
+
+        img_b64 = data["image"]
+        # Strip prefix like "data:image/png;base64,"
+        if "," in img_b64:
+            img_b64 = img_b64.split(",", 1)[1]
+
+        img_bytes = base64.b64decode(img_b64)
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+
+        # Apply same transforms used in training
+        tensor = transform(img).unsqueeze(0)
+
+        with torch.no_grad():
+            outputs = model(tensor)
+            _, predicted = torch.max(outputs, 1)
+            pred_label = class_names[predicted.item()]
+
+        return jsonify({"prediction": pred_label})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)

@@ -17,7 +17,7 @@ asl-alphabet.zip
 # Auto-downloaded helper + models
 helper_functions.py
 models/
-final_model/
+#final_model/
 
 # Ignore macOS system files
 .DS_Store
