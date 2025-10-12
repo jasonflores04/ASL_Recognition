@@ -43,7 +43,7 @@ This project is a web-based American Sign Language recognition system built with
 
 4. Install dependencies:
 
-$ pip install -r requirements.txt
+- $ pip install -r requirements.txt
 
 
 ---
