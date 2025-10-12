@@ -13,7 +13,6 @@ This project is a web-based American Sign Language recognition system built with
 - final_model/ : Your final trained model
 - asl_alphabet_data/ : Dataset folder
 - requirements.txt : Python dependencies
-- README.md : This file
 - venv/ : Python virtual environment (not tracked)
 
 ---
@@ -30,12 +29,12 @@ This project is a web-based American Sign Language recognition system built with
 
 1. Clone the repository:
 
-git clone https://github.com/jasonflores04/ASL_Recognition.git
-cd ASL_Recognition
+$ git clone https://github.com/jasonflores04/ASL_Recognition.git
+$ cd ASL_Recognition
 
-2. Create a virtual environment:
+3. Create a virtual environment:
 
-python3 -m venv venv
+$ python3 -m venv venv
 
 3. Activate the virtual environment:
 
@@ -44,7 +43,7 @@ python3 -m venv venv
 
 4. Install dependencies:
 
-pip install -r requirements.txt
+$ pip install -r requirements.txt
 
 
 ---
