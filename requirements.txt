@@ -1,0 +1,14 @@
+flask
+flask-cors
+torch
+torchvision
+torchaudio
+matplotlib
+pandas
+numpy
+scikit-learn
+scipy
+pillow
+kaggle
+mlxtend
+torchmetrics
