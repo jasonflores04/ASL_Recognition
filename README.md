@@ -29,12 +29,12 @@ This project is a web-based American Sign Language recognition system built with
 
 1. Clone the repository:
 
-$ git clone https://github.com/jasonflores04/ASL_Recognition.git
-$ cd ASL_Recognition
+ $ git clone https://github.com/jasonflores04/ASL_Recognition.git
+ $ cd ASL_Recognition
 
 3. Create a virtual environment:
 
-$ python3 -m venv venv
+ $ python3 -m venv venv
 
 3. Activate the virtual environment:
 
