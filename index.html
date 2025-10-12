@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ASL Recognition Showcase</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+<body class="has-background-light">
+
+<section class="section">
+  <div class="container has-text-centered">
+    <h1 class="title is-2">ASL Recognition Showcase</h1>
+    <p class="subtitle">Click below to test the trained ASL model</p>
+
+    <button id="generateBtn" class="button is-primary is-large">
+      Generate Random Image
+    </button>
+
+    <div class="box mt-5">
+      <figure class="image is-256x256 is-inline-block">
+        <img id="aslImage" src="" alt="ASL Sign" style="display: none;">
+      </figure>
+      <h2 id="prediction" class="title is-3 mt-3"></h2>
+      <p id="filename" class="subtitle is-5 has-text-grey"></p>
+    </div>
+  </div>
+</section>
+
+<script>
+document.getElementById("generateBtn").addEventListener("click", async () => {
+  try {
+    const response = await fetch("/random");  
+    const data = await response.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    // Update image
+    const imgElement = document.getElementById("aslImage");
+    imgElement.src = "data:image/png;base64," + data.image;
+    imgElement.style.display = "block";
+
+    // Update prediction + filename
+    document.getElementById("prediction").innerText = "Prediction: " + data.prediction;
+    document.getElementById("filename").innerText = "Actual: " + data.filename[0];
+
+  } catch (err) {
+    console.error(err);
+    alert("Error fetching image.");
+  }
+});
+</script>
+
+</body>
+
+<footer class="footer has-background-white">
+  <div class="content has-text-centered has-text-dark">
+      <p>
+          &copy; 2025 Jason Flores & Jacob Flores. All Rights Reserved.
+      </p>
+  </div>
+</footer>
+
+</html>
