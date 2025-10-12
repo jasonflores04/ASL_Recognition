@@ -1,24 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
-
-
 <head>
   <meta charset="utf-8" />
-  <title>ASL Live Capture</title>
+  <title>ASL Recognition | Real-Time Sign Language AI</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 40px; }
-    video, canvas { border: 2px solid #ccc; width: 320px; height: 240px; }
-    button { margin-top: 10px; padding: 8px 14px; cursor: pointer; }
-    #prediction { font-size: 20px; margin-top: 20px; }
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #f8f9fa;
+      color: #2e2e2e;
+    }
+    video, canvas {
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 320px;
+      height: 240px;
+    }
+    #prediction, #prediction2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #363636;
+      margin-top: 15px;
+    }
+    #filename {
+      color: #6c757d;
+    }
+    .hero {
+      background: linear-gradient(120deg, #3273dc, #23d160);
+      color: white;
+    }
+    .section-title {
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #5a5a5a;
+    }
+    .fade-in {
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.6s ease forwards;
+    }
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
-<body>
-  <h2>ASL Realtime Prediction</h2>
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas><br>
-  <button id="capture">📸 Take Photo & Predict</button>
-  <div id="prediction">Prediction: —</div>
 
+<body>
+
+  <!-- Hero Section -->
+  <section class="hero is-medium">
+    <div class="hero-body has-text-centered">
+      <h1 class="title is-1 fade-in">ASL Recognition</h1>
+      <p class="subtitle is-4 fade-in" style="animation-delay:0.2s">
+        Empowering communication through real-time American Sign Language recognition.
+      </p>
+      <p class="fade-in" style="animation-delay:0.4s">
+        Experience how AI and computer vision can bridge accessibility gaps — capturing, predicting, and interpreting ASL gestures instantly.
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="section">
+    <div class="container">
+      <div class="columns is-vcentered is-multiline">
+
+        <!-- Webcam Prediction -->
+        <div class="column is-half has-text-centered fade-in">
+          <h2 class="section-title title is-3">Live ASL Detection</h2>
+          <p class="subtitle">Use your webcam to test real-time gesture prediction.</p>
+          <video id="video" autoplay playsinline></video>
+          <canvas id="canvas" width="320" height="240" style="display:none;"></canvas><br>
+          <button id="capture" class="button is-link is-medium mt-3">
+            <span class="icon">📸</span><span>Capture & Predict</span>
+          </button>
+          <div id="prediction">Prediction: —</div>
+        </div>
+
+        <!-- Dataset Showcase -->
+        <div class="column is-half has-text-centered fade-in">
+          <h2 class="section-title title is-3">Model Showcase</h2>
+          <p class="subtitle">Explore the trained model's predictions on sample images.</p>
+          <button id="generateBtn" class="button is-primary is-medium mb-4">🎯 Test Random Image</button>
+          <div class="box">
+            <figure class="image is-256x256 is-inline-block">
+              <img id="aslImage" src="" alt="ASL Sign" style="display: none; border-radius: 10px;">
+            </figure>
+            <h2 id="prediction2" class="title is-4 mt-3"></h2>
+            <p id="filename" class="subtitle is-6"></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Value / About Section -->
+  <section class="section has-background-white-bis">
+    <div class="container has-text-centered">
+      <h2 class="title is-3">Why This Matters</h2>
+      <p class="subtitle is-5 mt-3">
+        This project demonstrates how <strong>AI and computer vision</strong> can enhance accessibility and inclusivity.  
+        By recognizing ASL gestures in real time, this tool could assist in education, translation systems, and accessibility platforms — making communication more open and barrier-free.
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer has-background-light">
+    <div class="content has-text-centered">
+      <p>
+        <strong>ASL Recognition</strong> — A project by Jason & Jacob Flores.  
+        <br>Built with <span class="has-text-link">PyTorch</span> · <span class="has-text-success">Flask</span> · <span class="has-text-info">Bulma</span>
+      </p>
+      <p class="is-size-7 has-text-grey">&copy; 2025 All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Script -->
   <script>
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
@@ -50,72 +157,21 @@
 
     document.getElementById("capture").addEventListener("click", captureAndPredict);
     setupCamera();
+
+    document.getElementById("generateBtn").addEventListener("click", async () => {
+      const response = await fetch("/random");
+      const data = await response.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      const imgElement = document.getElementById("aslImage");
+      imgElement.src = "data:image/png;base64," + data.image;
+      imgElement.style.display = "block";
+      document.getElementById("prediction2").innerText = "Prediction: " + data.prediction;
+      document.getElementById("filename").innerText = "Actual: " + data.filename[0];
+    });
   </script>
-</body>
-
-
-
-<head>
-  <meta charset="UTF-8">
-  <title>ASL Recognition Showcase</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-</head>
-<body class="has-background-light">
-
-<section class="section">
-  <div class="container has-text-centered">
-    <h1 class="title is-2">ASL Recognition Showcase</h1>
-    <p class="subtitle">Click below to test the trained ASL model</p>
-
-    <button id="generateBtn" class="button is-primary is-large">
-      Generate Random Image
-    </button>
-
-    <div class="box mt-5">
-      <figure class="image is-256x256 is-inline-block">
-        <img id="aslImage" src="" alt="ASL Sign" style="display: none;">
-      </figure>
-      <h2 id="prediction" class="title is-3 mt-3"></h2>
-      <p id="filename" class="subtitle is-5 has-text-grey"></p>
-    </div>
-  </div>
-</section>
-
-<script>
-document.getElementById("generateBtn").addEventListener("click", async () => {
-  try {
-    const response = await fetch("/random");  
-    const data = await response.json();
-
-    if (data.error) {
-      alert(data.error);
-      return;
-    }
-
-    // Update image
-    const imgElement = document.getElementById("aslImage");
-    imgElement.src = "data:image/png;base64," + data.image;
-    imgElement.style.display = "block";
-
-    // Update prediction + filename
-    document.getElementById("prediction").innerText = "Prediction: " + data.prediction;
-    document.getElementById("filename").innerText = "Actual: " + data.filename[0];
-
-  } catch (err) {
-    console.error(err);
-    alert("Error fetching image.");
-  }
-});
-</script>
 
 </body>
-
-<footer class="footer has-background-white">
-  <div class="content has-text-centered has-text-dark">
-      <p>
-          &copy; 2025 Jason Flores & Jacob Flores. All Rights Reserved.
-      </p>
-  </div>
-</footer>
-
 </html>
