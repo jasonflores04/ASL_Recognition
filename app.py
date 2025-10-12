@@ -7,6 +7,10 @@ from torchvision import models, datasets
 from PIL import Image
 import os, random, io, base64, glob
 
+
+from PIL import ImageEnhance, ImageOps
+import base64, io
+
 # Flask app
 app = Flask(__name__)
 CORS(app)  # allow frontend JS to call API
@@ -30,10 +34,10 @@ model.eval()
 
 # Define transforms 
 transform = transforms.Compose([
-    transforms.Resize((200, 200)),  
+    transforms.Resize((224, 224)),  
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5],
-                         std=[0.5, 0.5, 0.5])
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
 ])
 
 # Routes
@@ -97,7 +101,23 @@ def predict_base64():
         img_bytes = base64.b64decode(img_b64)
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
-        # Apply same transforms used in training
+        # --- Improved preprocessing for webcam frames ---
+        w, h = img.size
+        crop_size = min(w, h)
+        left = (w - crop_size) / 2
+        top = (h - crop_size) / 2
+        right = (w + crop_size) / 2
+        bottom = (h + crop_size) / 2
+        img = img.crop((left, top, right, bottom)).resize((200, 200))
+
+        # Enhance clarity and contrast slightly
+        img = ImageEnhance.Brightness(img).enhance(1.2)
+        img = ImageEnhance.Contrast(img).enhance(1.3)
+        img = ImageEnhance.Color(img).enhance(1.1)
+
+        # Optional small denoise (helps on webcams)
+        img = ImageOps.autocontrast(img)
+
         tensor = transform(img).unsqueeze(0)
 
         with torch.no_grad():
