@@ -2,176 +2,790 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>ASL Recognition | Real-Time Sign Language AI</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HandSpeak Studio | ASL Live Interpreter</title>
+
+  <!-- Fonts: distinct pairing (display + mono) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      font-family: "Inter", sans-serif;
-      background-color: #f8f9fa;
-      color: #2e2e2e;
+    :root{
+      --bg0:#07080b;
+      --bg1:#0b0d13;
+      --card:#0f1320cc;
+      --card2:#0d1020b3;
+
+      --text:#e9ecff;
+      --muted:#b7bfd8;
+      --faint:#7e88a6;
+
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.16);
+
+      --a:#8df2ff;
+      --b:#b18cff;
+      --c:#7dffb2;
+      --warn:#ffce7a;
+      --bad:#ff7a9a;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --shadow2: 0 10px 30px rgba(0,0,0,.45);
+      --r: 18px;
+      --r2: 14px;
     }
-    video, canvas {
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body{
+      margin:0;
+      color:var(--text);
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(141,242,255,.12), transparent 55%),
+                  radial-gradient(900px 600px at 80% 15%, rgba(177,140,255,.16), transparent 60%),
+                  radial-gradient(900px 700px at 55% 80%, rgba(125,255,178,.10), transparent 60%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow-x:hidden;
+    }
+
+    /* subtle grain */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-20%;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+      opacity:.12;
+      pointer-events:none;
+      transform: rotate(2deg);
+    }
+
+    a{ color: var(--a); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    .wrap{ max-width: 1120px; margin: 0 auto; padding: 22px 18px 64px; }
+
+    /* Top bar */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding: 16px 18px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-radius: 999px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      min-width: 220px;
+    }
+    
+    
+    @keyframes sweep{ to { transform: rotate(360deg); } }
+
+    .brand h1{
+      margin:0;
+      font-size: 16px;
+      line-height: 1.1;
+      letter-spacing: .2px;
+    }
+    .brand p{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .meta{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .2px;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:99px;
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(255,206,122,.12);
+    }
+    .dot.ok{
+      background: var(--c);
+      box-shadow: 0 0 0 4px rgba(125,255,178,.12);
+    }
+    .dot.bad{
+      background: var(--bad);
+      box-shadow: 0 0 0 4px rgba(255,122,154,.12);
+    }
+
+    /* Hero */
+    .hero{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:18px;
+      margin-top: 18px;
+      align-items:stretch;
+    }
+    @media (max-width: 900px){
+      .hero{ grid-template-columns: 1fr; }
+      .brand{ min-width: unset; }
+    }
+
+    .heroCard{
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      padding: 22px;
+      background:
+        radial-gradient(900px 600px at 12% 25%, rgba(141,242,255,.12), transparent 55%),
+        radial-gradient(700px 500px at 85% 35%, rgba(177,140,255,.14), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .heroCard::after{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+      transform: translateX(-120%);
+      animation: sheen 7.5s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes sheen{
+      0%,55%{ transform: translateX(-120%); }
+      70%{ transform: translateX(120%); }
+      100%{ transform: translateX(120%); }
+    }
+
+    .heroTitle{
+      margin:0 0 10px;
+      font-size: clamp(28px, 4vw, 42px);
+      letter-spacing: -0.6px;
+      line-height: 1.05;
+    }
+    .heroTitle span{
+      background: linear-gradient(90deg, var(--a), var(--b), var(--c));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color: transparent;
+    }
+    .heroLead{
+      margin:0 0 14px;
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 62ch;
+    }
+    .heroBullets{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 14px;
+    }
+    .chip{
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px dashed rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      opacity:.92;
+    }
+
+    .sideCard{
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+    .sideCard h3{ margin: 0 0 8px; font-size: 15px; }
+    .sideCard p{ margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    /* Main grid */
+    .grid{
+      margin-top: 18px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .cardHead{
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .cardHead h2{
+      margin:0;
+      font-size: 17px;
+      letter-spacing: -.2px;
+    }
+    .cardHead p{
+      margin:6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      max-width: 62ch;
+    }
+    .cardBody{ padding: 16px 18px 18px; }
+
+    /* Video viewport */
+    .viewport{
+      border-radius: var(--r2);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      overflow:hidden;
+      position:relative;
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    video, canvas{
+      display:block;
+      width:100%;
+      aspect-ratio: 4 / 3;
+      height:auto;
+    }
+    .viewport::before{
+      /* subtle framing guides */
+      content:"";
+      position:absolute; inset:0;
+      background:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 36px 36px;
+      opacity:.10;
+      pointer-events:none;
+    }
+    .viewport::after{
+      content:"";
+      position:absolute; inset:0;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+      pointer-events:none;
+    }
+
+    .row{
+      display:flex;
+      gap: 12px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 14px;
+    }
+
+    .btn{
+      border: 1px solid rgba(255,255,255,.16);
+      background:
+        radial-gradient(500px 200px at 20% 10%, rgba(141,242,255,.18), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+      color: var(--text);
+      padding: 10px 14px;
       border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      width: 320px;
-      height: 240px;
-    }
-    #prediction, #prediction2 {
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: #363636;
-      margin-top: 15px;
-    }
-    #filename {
-      color: #6c757d;
-    }
-    .hero {
-      background: linear-gradient(120deg, #3273dc, #23d160);
-      color: white;
-    }
-    .section-title {
       font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 0.5rem;
+      letter-spacing: .2px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
     }
-    .subtitle {
-      color: #5a5a5a;
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.26); }
+    .btn:active{ transform: translateY(0px); }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
     }
-    .fade-in {
-      opacity: 0;
-      transform: translateY(10px);
-      animation: fadeInUp 0.6s ease forwards;
+
+    .btn.secondary{
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.12);
+      font-weight: 600;
     }
-    @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+
+    .kbd{
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-bottom-color: rgba(255,255,255,.22);
+      border-radius: 999px;
+      background: rgba(0,0,0,.25);
+      color: var(--muted);
     }
+
+    /* Output */
+    .output{
+      margin-top: 14px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .output b{
+      display:block;
+      font-size: 12px;
+      color: var(--faint);
+      letter-spacing: .2px;
+      margin-bottom: 6px;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    .output .value{
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.2px;
+      line-height: 1.15;
+    }
+    .output small{
+      display:block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    /* Polaroid sample */
+    .polaroid{
+      margin-top: 6px;
+      border-radius: var(--r2);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      padding: 14px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.55);
+    }
+    .photo{
+      border-radius: 12px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+    }
+    .photo img{
+      display:block;
+      width:100%;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+      background: rgba(0,0,0,.10);
+    }
+    .caption{
+      margin-top: 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .caption .left .label{
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--faint);
+      margin-bottom: 6px;
+    }
+    .caption .left .big{
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.2px;
+      line-height: 1.2;
+    }
+    .caption .right{
+      text-align:right;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    /* Footer / info */
+    .info{
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .info strong{ color: var(--text); }
+    .footer{
+      margin-top: 18px;
+      padding: 18px 6px 0;
+      color: var(--faint);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .footer .mono{
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--faint);
+    }
+
   </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <!-- Top bar -->
+    <header class="topbar" aria-label="HandSpeak Studio header">
+      <div class="brand">
+        <div>
+          <h1>American Sign Language (ASL) recognition model</h1>
+          <p>Real-time ASL recognition • camera → model → text</p>
+        </div>
+      </div>
 
-  <!-- Hero Section -->
-  <section class="hero is-medium">
-    <div class="hero-body has-text-centered">
-      <h1 class="title is-1 fade-in">ASL Recognition</h1>
-      <p class="subtitle is-4 fade-in" style="animation-delay:0.2s">
-        Empowering communication through real-time American Sign Language recognition.
-      </p>
-      <p class="fade-in" style="animation-delay:0.4s">
-        Experience how AI and computer vision can bridge accessibility gaps — capturing, predicting, and interpreting ASL gestures instantly.
-      </p>
-    </div>
-  </section>
+      <div class="meta">
+        <span class="pill" title="Service status">
+          <span id="svcDot" class="dot" aria-hidden="true"></span>
+          <span id="svcText">warming up…</span>
+        </span>
+      </div>
+    </header>
 
-  <!-- Main Content -->
-  <section class="section">
-    <div class="container">
-      <div class="columns is-vcentered is-multiline">
+    <!-- Hero -->
+    <section class="hero" aria-label="Intro section">
+      <div class="heroCard">
+        <h2 class="heroTitle">
+          Turn hands into letters in the moment
+        </h2>
+        <p class="heroLead">
+          This is a project that watches a frame, makes a guess, and shows you what the model thinks.
+          No grand promises, just a clean pipeline you can iterate on.
+          <br>99% Accuracy.</br>
+        </p>
 
-        <!-- Webcam Prediction -->
-        <div class="column is-half has-text-centered fade-in">
-          <h2 class="section-title title is-3">Live ASL Detection</h2>
-          <p class="subtitle">Use your webcam to test real-time gesture prediction.</p>
-          <video id="video" autoplay playsinline></video>
-          <canvas id="canvas" width="320" height="240" style="display:none;"></canvas><br>
-          <button id="capture" class="button is-link is-medium mt-3">
-            <span class="icon">📸</span><span>Capture & Predict</span>
-          </button>
-          <div id="prediction">Prediction: —</div>
+        <div class="heroBullets" aria-label="Highlights">
+          <span class="chip">webcam capture</span>
+          <span class="chip">base64 → Flask</span>
+          <span class="chip">PyTorch inference</span>
+          <span class="chip">instant feedback loop</span>
+        </div>
+      </div>
+
+      <aside class="sideCard" aria-label="Tips">
+        <h3>Quick tips</h3>
+        <p>
+          Keep your hand inside the frame, hold still for a beat, and aim for even lighting.
+          If the output looks off, try moving slightly closer to the camera.
+        </p>
+      </aside>
+    </section>
+
+    <!-- Main -->
+    <main class="grid" aria-label="Main tools">
+      <!-- Live card -->
+      <section class="card" aria-label="Live recognition">
+        <div class="cardHead">
+          <div>
+            <h2>Live camera read</h2>
+            <p>Grab one frame and ask the model to name the sign.</p>
+          </div>
+          <span class="pill" title="Camera status">
+            <span id="camDot" class="dot" aria-hidden="true"></span>
+            <span id="camText">camera: not ready</span>
+          </span>
         </div>
 
-        <!-- Dataset Showcase -->
-        <div class="column is-half has-text-centered fade-in">
-          <h2 class="section-title title is-3">Model Showcase</h2>
-          <p class="subtitle">Explore the trained model's predictions on sample images.</p>
-          <button id="generateBtn" class="button is-primary is-medium mb-4">🎯 Test Random Image</button>
-          <div class="box">
-            <figure class="image is-256x256 is-inline-block">
-              <img id="aslImage" src="" alt="ASL Sign" style="display: none; border-radius: 10px;">
-            </figure>
-            <h2 id="prediction2" class="title is-4 mt-3"></h2>
-            <p id="filename" class="subtitle is-6"></p>
+        <div class="cardBody">
+          <div class="viewport" aria-label="Camera viewport">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+          </div>
+
+          <div class="row">
+            <button id="capture" class="btn" disabled>
+              <span aria-hidden="true">⟡</span>
+              <span>Snap & read</span>
+              <span class="kbd">Space</span>
+            </button>
+
+            <button id="flip" class="btn secondary" type="button" title="Mirror preview (visual only)">
+              <span aria-hidden="true">⇄</span>
+              <span>Mirror</span>
+            </button>
+          </div>
+
+          <div class="output" role="status" aria-live="polite">
+            <div>
+              <b>MODEL OUTPUT</b>
+              <div id="prediction" class="value">—</div>
+              <small id="hint">When you’re ready, press <span class="kbd">Space</span> or click “Snap & read”.</small>
+            </div>
+            <div class="pill" title="Request state">
+              <span id="reqDot" class="dot ok" aria-hidden="true"></span>
+              <span id="reqText">idle</span>
+            </div>
           </div>
         </div>
+      </section>
 
-      </div>
-    </div>
-  </section>
+      <!-- Sample card -->
+      <section class="card" aria-label="Model showcase">
+        <div class="cardHead">
+          <div>
+            <h2>Archive pull</h2>
+            <p>Roll a random dataset image and see how the model behaves outside the webcam feed.</p>
+          </div>
+          <span class="pill" title="Dataset button hint">
+            <span aria-hidden="true">🎲</span>
+            <span>random sample</span>
+          </span>
+        </div>
 
-  <!-- Value / About Section -->
-  <section class="section has-background-white-bis">
-    <div class="container has-text-centered">
-      <h2 class="title is-3">Why This Matters</h2>
-      <p class="subtitle is-5 mt-3">
-        This project demonstrates how <strong>AI and computer vision</strong> can enhance accessibility and inclusivity.  
-        By recognizing ASL gestures in real time, this tool could assist in education, translation systems, and accessibility platforms — making communication more open and barrier-free.
-      </p>
-    </div>
-  </section>
+        <div class="cardBody">
+          <div class="row" style="margin-top:0;">
+            <button id="generateBtn" class="btn">
+              <span aria-hidden="true">🎛️</span>
+              <span>Roll a sample</span>
+              <span class="kbd">R</span>
+            </button>
+          </div>
 
-  <!-- Footer -->
-  <footer class="footer has-background-light">
-    <div class="content has-text-centered">
-      <p>
-        <strong>ASL Recognition</strong> — A project by Jason & Jacob Flores.  
-        <br>Built with <span class="has-text-link">PyTorch</span> · <span class="has-text-success">Flask</span> · <span class="has-text-info">Bulma</span>
-      </p>
-      <p class="is-size-7 has-text-grey">&copy; 2025 All rights reserved.</p>
-    </div>
-  </footer>
+          <div class="polaroid" aria-label="Sample preview">
+            <div class="photo">
+              <img id="aslImage" src="" alt="Sample ASL sign" style="display:none;">
+              <div id="emptyPhoto" style="padding:18px; color:var(--muted); font-size:13px;">
+                No sample loaded yet. Hit <span class="kbd">R</span> to pull one.
+              </div>
+            </div>
 
-  <!-- Script -->
+            <div class="caption">
+              <div class="left">
+                <div class="label">MODEL SAYS</div>
+                <div id="prediction2" class="big">—</div>
+              </div>
+              <div class="right">
+                <div id="filename">label: —</div>
+                <div style="margin-top:6px; color:var(--faint); font-family:'IBM Plex Mono', monospace;">
+                  /random
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- About -->
+    <section class="info" aria-label="About this project">
+      <strong>What this is:</strong> An interface for experimenting with ASL classification. One frame in, one prediction out.
+      <br />
+      <strong>Why it matters:</strong> Tools like this can become building blocks for learning aids, accessibility demos, and human-in-the-loop dataset cleanup.
+      <br />
+    </section>
+
+    <footer class="footer" aria-label="Footer">
+      <div class="mono">Built by Jason & Jacob Flores • PyTorch + Flask</div>
+      <div class="mono">© 2025</div>
+    </footer>
+  </div>
+
   <script>
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+
+    const captureBtn = document.getElementById("capture");
+    const flipBtn = document.getElementById("flip");
+
     const predDiv = document.getElementById("prediction");
+    const hint = document.getElementById("hint");
+
+    const camDot = document.getElementById("camDot");
+    const camText = document.getElementById("camText");
+
+    const svcDot = document.getElementById("svcDot");
+    const svcText = document.getElementById("svcText");
+
+    const reqDot = document.getElementById("reqDot");
+    const reqText = document.getElementById("reqText");
+
+    const generateBtn = document.getElementById("generateBtn");
+    const imgElement = document.getElementById("aslImage");
+    const emptyPhoto = document.getElementById("emptyPhoto");
+    const pred2 = document.getElementById("prediction2");
+    const filename = document.getElementById("filename");
+
+    let mirrored = false;
+    let streamRef = null;
+
+    function setReq(state, kind = "ok") {
+      reqText.textContent = state;
+      reqDot.classList.remove("ok", "bad");
+      reqDot.classList.add(kind);
+    }
+
+    function setCam(state, kind = "ok") {
+      camText.textContent = "camera: " + state;
+      camDot.classList.remove("ok", "bad");
+      camDot.classList.add(kind);
+    }
+
+    function setSvc(state, kind = "ok") {
+      svcText.textContent = state;
+      svcDot.classList.remove("ok", "bad");
+      svcDot.classList.add(kind);
+    }
 
     async function setupCamera() {
+      setCam("requesting…", "ok");
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
+        streamRef = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = streamRef;
+
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => resolve();
+        });
+
+        setCam("ready", "ok");
+        captureBtn.disabled = false;
+        hint.textContent = "Frame looks good? Snap when you’re steady.";
+
+        // service "ready" once camera is ready (lightweight proxy for app health)
+        setSvc("online", "ok");
       } catch (err) {
+        setCam("blocked", "bad");
+        setSvc("offline", "bad");
+        hint.textContent = "Camera access failed. Check browser permissions and reload.";
         alert("Camera access denied or unavailable: " + err);
       }
     }
 
-    async function captureAndPredict() {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataURL = canvas.toDataURL("image/png");
-      const response = await fetch("/predict_base64", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataURL })
-      });
-      const result = await response.json();
-      predDiv.textContent = result.prediction
-        ? "Prediction: " + result.prediction
-        : "Error: " + result.error;
+    function drawFrameToCanvas() {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.save();
+      if (mirrored) {
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, w, h);
+      ctx.restore();
     }
 
-    document.getElementById("capture").addEventListener("click", captureAndPredict);
-    setupCamera();
+    async function captureAndPredict() {
+      if (captureBtn.disabled) return;
 
-    document.getElementById("generateBtn").addEventListener("click", async () => {
-      const response = await fetch("/random");
-      const data = await response.json();
-      if (data.error) {
-        alert(data.error);
-        return;
+      setReq("reading…", "ok");
+      captureBtn.disabled = true;
+      predDiv.textContent = "…";
+      hint.textContent = "Sending a frame to the model.";
+
+      try {
+        drawFrameToCanvas();
+        const dataURL = canvas.toDataURL("image/png");
+
+        const response = await fetch("/predict_base64", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: dataURL })
+        });
+
+        const result = await response.json();
+
+        if (result.prediction) {
+          predDiv.textContent = result.prediction;
+          hint.textContent = "Try the same sign again with a different angle or distance.";
+          setReq("done", "ok");
+        } else {
+          predDiv.textContent = "Error";
+          hint.textContent = result.error || "Something went wrong.";
+          setReq("error", "bad");
+        }
+      } catch (e) {
+        predDiv.textContent = "Error";
+        hint.textContent = "Network/endpoint error. Check your Flask route and console logs.";
+        setReq("error", "bad");
+      } finally {
+        captureBtn.disabled = false;
       }
-      const imgElement = document.getElementById("aslImage");
-      imgElement.src = "data:image/png;base64," + data.image;
-      imgElement.style.display = "block";
-      document.getElementById("prediction2").innerText = "Prediction: " + data.prediction;
-      document.getElementById("filename").innerText = "Actual: " + data.filename[0];
-    });
-  </script>
+    }
 
+    async function rollSample() {
+      setReq("fetching sample…", "ok");
+      generateBtn.disabled = true;
+
+      try {
+        const response = await fetch("/random");
+        const data = await response.json();
+
+        if (data.error) {
+          alert(data.error);
+          setReq("error", "bad");
+          return;
+        }
+
+        imgElement.src = "data:image/png;base64," + data.image;
+        imgElement.style.display = "block";
+        emptyPhoto.style.display = "none";
+
+        pred2.textContent = data.prediction ? data.prediction : "—";
+        filename.textContent = "label: " + (data.filename ? data.filename[0] : "—");
+        setReq("done", "ok");
+      } catch (e) {
+        setReq("error", "bad");
+        alert("Could not fetch /random. Check your backend route.");
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    flipBtn.addEventListener("click", () => {
+      mirrored = !mirrored;
+      video.style.transform = mirrored ? "scaleX(-1)" : "scaleX(1)";
+      flipBtn.querySelector("span:last-child").textContent = mirrored ? "Un-mirror" : "Mirror";
+    });
+
+    captureBtn.addEventListener("click", captureAndPredict);
+    generateBtn.addEventListener("click", rollSample);
+
+    // Keyboard shortcuts
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        captureAndPredict();
+      }
+      if (e.key.toLowerCase() === "r") {
+        rollSample();
+      }
+    });
+
+    setupCamera();
+  </script>
 </body>
 </html>
